@@ -3,3 +3,5 @@ data/
 venv/
 **/*.pyc
 __pycache__
+.vscode/
+/*.session.sql
