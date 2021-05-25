@@ -37,3 +37,16 @@
 5. 当前已创建未完成的订单数
 
 并通过BI工具创建对应的图表。
+
+## 准备工作
+
+安装如下工具
+
+1. docker 和 docker-compose
+2. 编辑器如 Visual Studio Code
+3. PostgreSQL GUI 工具，比如搜索VS Code的相关扩展
+
+熟悉以下编程知识
+
+1. Python
+2. SQL
