@@ -21,11 +21,13 @@
 
 |字段|类型|说明|
 |---|---|---|
-|id|字符串|事件ID，在每个源系统中是唯一的|
+|id|字符串|订单ID|
 |productId|字符串|商品ID，对应商品主数据里的ID。每个订单只包含同一个商品ID|
 |amount|数字|商品数量|
 |status|字符串|当前的当前状态。包括created，completed，deleted|
 |timestamp|时间戳|事件发生的时间|
+
+注意，id 可能有重复，但 id 和 timestamp组合起来是唯一的。
 
 计算如下指标：
 
