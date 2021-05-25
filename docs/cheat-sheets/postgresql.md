@@ -2,33 +2,33 @@
 
 ## PostgreSQL
 
-
 ### 创建数据库表
 
 ```sql
-CREATE TABLE IF NOT EXISTS STG_PRODUCTS (
+CREATE TABLE IF NOT EXISTS stg_products (
     id VARCHAR NOT NULL UNIQUE,
     title VARCHAR,
     category VARCHAR,
-    price VARCHAR
+    price DECIMAL,
+    processed_time timestamp
 );
 
-CREATE TABLE IF NOT EXISTS DIM_PRODUCTS (
+CREATE TABLE IF NOT EXISTS dim_products (
     id VARCHAR NOT NULL,
     title VARCHAR,
     category VARCHAR,
     price DECIMAL,
-    processed_date date,
-    start_date date,
-    end_date date,
-    UNIQUE(id, start_date)
+    processed_time timestamp,
+    start_time timestamp,
+    end_time timestamp,
+UNIQUE(id, start_time)
 );
 ```
 
 ### 清空表
 
 ```sql
-truncate STG_PRODUCTS;
+truncate stg_products;
 ```
 
 ### 创建时间维度
@@ -61,28 +61,29 @@ ON CONFLICT (id) DO NOTHING;
 ### 更新缓慢变化维
 
 ```sql
-UPDATE DIM_PRODUCTS
-SET title = STG_PRODUCTS.title,
-    category = STG_PRODUCTS.category,
-    price = STG_PRODUCTS.price,
-    end_date = '{{ ds }}' -- 当前时间。比如 2021-05-05
-FROM STG_PRODUCTS
-WHERE STG_PRODUCTS.id = DIM_PRODUCTS.id
-AND '{{ ds }}' >= DIM_PRODUCTS.start_date and '{{ ds }}' < DIM_PRODUCTS.end_date;
+UPDATE dim_products
+SET title = stg_products.title,
+    category = stg_products.category,
+    price = stg_products.price,
+    processed_time = '{{ ts }}',
+    end_time = '{{ ts }}'
+FROM stg_products
+WHERE stg_products.id = dim_products.id
+AND '{{ ts }}' >= dim_products.start_time AND '{{ ts }}' < dim_products.end_time
+AND (dim_products.title <> stg_products.title OR dim_products.category <> stg_products.category OR dim_products.price <> stg_products.price);
 
-WITH dim as (
-    SELECT * FROM DIM_PRODUCTS
-    WHERE '{{ ds }}' >= start_date and '{{ ds }}' < end_date
+WITH sc as (
+    SELECT * FROM dim_products
+    WHERE '{{ ts }}' >= dim_products.start_time and '{{ ts }}' < dim_products.end_time
 )
-INSERT INTO DIM_PRODUCTS
-SELECT 
-    STG_PRODUCTS.id as id,
-    STG_PRODUCTS.title,
-    STG_PRODUCTS.category,
-    STG_PRODUCTS.price,
-    '{{ ds }}' AS processed_date,
-    '{{ ds }}' AS start_date,
-    '9999-12-31' AS end_date
-FROM STG_PRODUCTS
-WHERE STG_PRODUCTS.id NOT IN (select id from dim);
+INSERT INTO dim_products(id, title, category, price, processed_time, start_time, end_time)
+SELECT stg_products.id as id,
+    stg_products.title,
+    stg_products.category,
+    stg_products.price,
+    '{{ ts }}' AS processed_time,
+    '{{ ts }}' AS start_time,
+    '9999-12-31 23:59:59' AS end_time
+FROM stg_products
+WHERE stg_products.id NOT IN (select id from sc);
 ```
