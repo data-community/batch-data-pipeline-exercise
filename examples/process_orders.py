@@ -2,7 +2,6 @@ import datetime
 
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-# https://airflow.apache.org/docs/apache-airflow-providers-postgres/stable/_api/airflow/providers/postgres/hooks/postgres/index.html
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 from airflow.operators.python import PythonOperator
@@ -89,7 +88,7 @@ CREATE TABLE IF NOT EXISTS dim_orders (
 """
 
 create_orders_sql = """
-CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE IF NOT EXISTS fact_orders_created (
     order_id VARCHAR NOT NULL,
     product_id VARCHAR,
     created_date_id VARCHAR,
@@ -146,8 +145,8 @@ SELECT id AS order_id,
 FROM new_records
 """ % default_end_time
 
-transform_orders_sql = """
-INSERT INTO orders(order_id, product_id, created_time, created_date_id, amount, total_price, processed_time)
+transform_fact_orders_created_sql = """
+INSERT INTO fact_orders_created(order_id, product_id, created_time, created_date_id, amount, total_price, processed_time)
 SELECT stg_orders.id AS order_id,
     product_id,
     event_time as created_time,
@@ -274,13 +273,13 @@ with DAG(
         sql=create_dim_orders_sql,
     )
 
-    create_orders_table = PostgresOperator(
-        task_id="create_orders_table",
+    create_fact_orders_created_table = PostgresOperator(
+        task_id="create_fact_orders_created_table",
         postgres_conn_id=connection_id,
         sql=create_orders_sql,
     )
 
-    check_stg_orders_csv_readiness >> normalize_orders_csv >> create_stg_orders_table >> load_orders_to_stg_orders_table >> [create_dim_orders_table, create_orders_table]
+    check_stg_orders_csv_readiness >> normalize_orders_csv >> create_stg_orders_table >> load_orders_to_stg_orders_table >> [create_dim_orders_table, create_fact_orders_created_table]
 
     transform_dim_orders_table = PostgresOperator(
         task_id="transform_dim_orders_table",
@@ -290,10 +289,10 @@ with DAG(
 
     create_dim_orders_table >> transform_dim_orders_table
 
-    transform_orders_table = PostgresOperator(
-        task_id="transform_orders_table",
+    transform_fact_orders_created_table = PostgresOperator(
+        task_id="transform_fact_orders_created_table",
         postgres_conn_id=connection_id,
-        sql=transform_orders_sql,
+        sql=transform_fact_orders_created_sql,
     )
 
-    create_orders_table >> transform_orders_table
+    create_fact_orders_created_table >> transform_fact_orders_created_table
