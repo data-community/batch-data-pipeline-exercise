@@ -64,11 +64,11 @@ WHERE stg_products.id NOT IN (select id from sc);
 create_stg_orders_sql = """
 CREATE TABLE IF NOT EXISTS stg_orders (
     id VARCHAR NOT NULL,
-    productId VARCHAR,
+    product_id VARCHAR,
     amount DECIMAL,
-    totalPrice DECIMAL,
+    total_price DECIMAL,
     status VARCHAR,
-    eventTime timestamp,
+    event_time timestamp,
     processed_time timestamp
 );
 
@@ -79,7 +79,7 @@ create_dim_orders_sql = """
 CREATE TABLE IF NOT EXISTS dim_orders (
     order_id VARCHAR NOT NULL,
     status VARCHAR,
-    eventTime timestamp,
+    event_time timestamp,
     processed_time timestamp,
     start_time timestamp,
     end_time timestamp,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_id VARCHAR NOT NULL,
     product_id VARCHAR,
     amount DECIMAL,
-    totalPrice DECIMAL,
+    total_price DECIMAL,
     processed_time timestamp,
     UNIQUE(order_id)
 );
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS orders (
 transform_dim_orders_sql = """
 WITH stg_orders_with_row_number AS (
      SELECT *, 
-           ROW_NUMBER() OVER(PARTITION BY id ORDER BY eventtime) AS rn
+           ROW_NUMBER() OVER(PARTITION BY id ORDER BY event_time) AS rn
       FROM stg_orders
 ), earliest_orders AS (
     SELECT * FROM stg_orders_with_row_number WHERE rn = 1
@@ -114,33 +114,44 @@ AND '{{ ts }}' >= dim_orders.start_time AND '{{ ts }}' < dim_orders.end_time
 AND (earliest_orders.status <> dim_orders.status);
 
 WITH ordered_stg_orders as (
-    SELECT *, ROW_NUMBER() OVER(PARTITION BY id,status ORDER BY eventtime) rn,
-    LAST_VALUE(eventtime) OVER(PARTITION BY id,status ORDER BY eventtime) last_eventtime
+    SELECT *, ROW_NUMBER() OVER(PARTITION BY id,status ORDER BY event_time) rn,
+    LAST_VALUE(event_time) OVER(PARTITION BY id,status ORDER BY event_time) last_event_time
     FROM stg_orders
-    order by id, eventTime
+    order by id, event_time
 ), distinct_stg_orders as (
-    select id, status, eventTime, 
-    eventTime as startTime,
-    last_eventtime as endTime,
-    ROW_NUMBER() OVER(PARTITION BY id ORDER BY eventtime) rn
+    select id, status, event_time, 
+    event_time as start_time,
+    last_event_time as end_time,
+    ROW_NUMBER() OVER(PARTITION BY id ORDER BY event_time) rn
     from ordered_stg_orders where ordered_stg_orders.rn = 1
 ) ,new_records as (select 
     current_orders.id,
     current_orders.status,
-    current_orders.eventTime,
-    current_orders.eventTime as startTime,
-    coalesce(next_orders.eventTime, '9999-12-31 23:59:59') as endTime
+    current_orders.event_time,
+    current_orders.event_time as start_time,
+    coalesce(next_orders.event_time, '9999-12-31 23:59:59') as end_time
 from distinct_stg_orders current_orders left join distinct_stg_orders next_orders
 on current_orders.id = next_orders.id and current_orders.rn = next_orders.rn -  1
 ) 
-INSERT INTO dim_orders(order_id, status, eventTime, processed_time, start_time, end_time)
+INSERT INTO dim_orders(order_id, status, event_time, processed_time, start_time, end_time)
 SELECT id AS order_id,
     status,
-    eventTime,
+    event_time,
     '{{ ts }}',
-    startTime,
-    endTime
+    start_time,
+    end_time
 FROM new_records
+"""
+
+transform_orders_sql = """
+INSERT INTO orders(order_id, product_id, amount, total_price, processed_time)
+SELECT id AS order_id,
+    product_id,
+    amount,
+    total_price,
+    '{{ ts }}'
+FROM stg_orders
+ON CONFLICT(order_id) DO NOTHING
 """
 
 def normalize_csv(ts, **kwargs):
@@ -263,11 +274,20 @@ with DAG(
         sql=create_orders_sql,
     )
 
+    check_stg_orders_csv_readiness >> normalize_orders_csv >> create_stg_orders_table >> load_orders_to_stg_orders_table >> [create_dim_orders_table, create_orders_table]
+
     transform_dim_orders_table = PostgresOperator(
         task_id="transform_dim_orders_table",
         postgres_conn_id=connection_id,
         sql=transform_dim_orders_sql,
     )
 
-    check_stg_orders_csv_readiness >> normalize_orders_csv >> create_stg_orders_table >> load_orders_to_stg_orders_table >> [create_dim_orders_table, create_orders_table]
     create_dim_orders_table >> transform_dim_orders_table
+
+    transform_orders_table = PostgresOperator(
+        task_id="transform_orders_table",
+        postgres_conn_id=connection_id,
+        sql=transform_orders_sql,
+    )
+
+    create_orders_table >> transform_orders_table
