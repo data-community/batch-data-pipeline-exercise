@@ -2,7 +2,7 @@
 
 ## Trigger DAG
 
-手动出发DAG运行。
+手动触发DAG运行。
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/dags/process_orders/dagRuns \
@@ -15,7 +15,8 @@ curl -X POST http://localhost:8080/api/v1/dags/process_orders/dagRuns \
 }'
 ```
 
-注意：execution_date 不可重复。
+注意：`execution_date` 不可重复，并且应该大于DAG的 `start_date`。
+
 ## Modules
 
 ```python
