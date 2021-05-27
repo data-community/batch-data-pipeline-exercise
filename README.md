@@ -63,6 +63,16 @@
 1. Python
 2. SQL
 
+## 开始练习
+
+运行相关服务
+
+```
+docker-compose up
+```
+
+编写Airflow所需的DAG，放在 `dags/` 目录中，将数据放在 `data/` 目录中（示例数据见 `/sample-data` ）。最后可以在 Metabase 中构建图表。
+
 ## 快速链接
 
 * Airflow http://localhost:8080
