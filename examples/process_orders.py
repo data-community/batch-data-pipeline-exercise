@@ -10,6 +10,7 @@ from airflow.sensors.bash import BashSensor
 
 default_args = {"owner": "airflow"}
 connection_id = 'dwh'
+default_end_time = '2999-12-31 23:59:59'
 
 create_stg_products_sql = """
 CREATE TABLE IF NOT EXISTS stg_products (
@@ -56,10 +57,10 @@ SELECT stg_products.id as id,
     stg_products.price,
     '{{ ts }}' AS processed_time,
     '{{ ts }}' AS start_time,
-    '9999-12-31 23:59:59' AS end_time
+    '%s' AS end_time
 FROM stg_products
 WHERE stg_products.id NOT IN (select id from sc);
-"""
+""" % default_end_time
 
 create_stg_orders_sql = """
 CREATE TABLE IF NOT EXISTS stg_orders (
@@ -91,6 +92,7 @@ create_orders_sql = """
 CREATE TABLE IF NOT EXISTS orders (
     order_id VARCHAR NOT NULL,
     product_id VARCHAR,
+    created_date_id VARCHAR,
     amount DECIMAL,
     total_price DECIMAL,
     processed_time timestamp,
@@ -129,7 +131,7 @@ WITH ordered_stg_orders as (
     current_orders.status,
     current_orders.event_time,
     current_orders.event_time as start_time,
-    coalesce(next_orders.event_time, '9999-12-31 23:59:59') as end_time
+    coalesce(next_orders.event_time, '%s') as end_time
 from distinct_stg_orders current_orders left join distinct_stg_orders next_orders
 on current_orders.id = next_orders.id and current_orders.rn = next_orders.rn -  1
 ) 
@@ -141,16 +143,18 @@ SELECT id AS order_id,
     start_time,
     end_time
 FROM new_records
-"""
+""" % default_end_time
 
 transform_orders_sql = """
-INSERT INTO orders(order_id, product_id, amount, total_price, processed_time)
-SELECT id AS order_id,
+INSERT INTO orders(order_id, product_id, created_date_id, amount, total_price, processed_time)
+SELECT stg_orders.id AS order_id,
     product_id,
+    dim_dates.id as created_date_id,
     amount,
     total_price,
     '{{ ts }}'
 FROM stg_orders
+INNER JOIN dim_dates on dim_dates.datum = date(event_time)
 ON CONFLICT(order_id) DO NOTHING
 """
 
