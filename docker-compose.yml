@@ -121,6 +121,11 @@ services:
     restart: always
     ports: 
       - 15432:5432
+  metabase:
+    image:
+      metabase/metabase
+    ports:
+      - 8082:3000
 volumes:
   airflow-db-volume:
   dwh-db-volume:
