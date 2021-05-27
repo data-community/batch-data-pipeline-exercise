@@ -1,6 +1,21 @@
 # Airflow
 
+## Trigger DAG
 
+手动出发DAG运行。
+
+```bash
+curl -X POST http://localhost:8080/api/v1/dags/process_orders/dagRuns \
+    --user "airflow:airflow" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json' \
+    -d '{
+  "execution_date": "2020-01-01T19:00:00Z",
+  "conf": {}
+}'
+```
+
+注意：execution_date 不可重复。
 ## Modules
 
 ```python
@@ -25,27 +40,19 @@ check_file_existence = BashSensor(
 )
 ```
 
-## PostgresOperator
+## Execute SQL with PostgresOperator
 
 ```python
 create_stg_products_table = PostgresOperator(
-    task_id="create_stg_products_table",
+    task_id="******unique_task_id******",
     postgres_conn_id=connection_id,
     sql="""
-        CREATE TABLE IF NOT EXISTS STG_PRODUCTS (
-            id VARCHAR NOT NULL UNIQUE,
-            title VARCHAR,
-            category VARCHAR,
-            price DECIMAL,
-            processed_date DATE
-        );
-
-        truncate STG_PRODUCTS;
+        ***************sql***************
         """,
 )
 ```
 
-## Normalize CSV
+## Normalize CSV with PythonOperator
 
 Replace CSV delimiter from `,` to `\t`.
 
@@ -66,15 +73,10 @@ def normalize_csv(ds, **kwargs):
                 row.append(ds)
                 writer.writerow(row)
     return target_filename
-```
 
-
-## PythonOperator
-
-```python
 normalize_products_csv = PythonOperator(
     task_id='normalize_products_csv',
-    python_callable=normalize_csv,
+    python_callable=normalize_csv,  # normalize_csv is the method name
     op_kwargs={
         'source': "/data/raw/products_{{ ds }}.csv",
         'target': "/data/staging/products_{{ ds }}.csv"
@@ -82,7 +84,7 @@ normalize_products_csv = PythonOperator(
 )
 ```
 
-## PostgresHook
+## Load data into PostgreSQL with PostgresHook
 
 ```python
 load_products_to_stg_products_table = PythonOperator(

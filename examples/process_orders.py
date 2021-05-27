@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_id VARCHAR NOT NULL,
     product_id VARCHAR,
     created_date_id VARCHAR,
+    created_time timestamp,
     amount DECIMAL,
     total_price DECIMAL,
     processed_time timestamp,
@@ -146,9 +147,10 @@ FROM new_records
 """ % default_end_time
 
 transform_orders_sql = """
-INSERT INTO orders(order_id, product_id, created_date_id, amount, total_price, processed_time)
+INSERT INTO orders(order_id, product_id, created_time, created_date_id, amount, total_price, processed_time)
 SELECT stg_orders.id AS order_id,
     product_id,
+    event_time as created_time,
     dim_dates.id as created_date_id,
     amount,
     total_price,
@@ -183,7 +185,7 @@ def load_csv_to_postgres(table_name, **kwargs):
 
 with DAG(
     dag_id="process_orders",
-    start_date=datetime.datetime(2020, 2, 2),
+    start_date=datetime.datetime(2020, 1, 1),
     schedule_interval="@once",
     default_args=default_args,
     catchup=False,
