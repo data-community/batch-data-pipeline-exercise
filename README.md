@@ -1,4 +1,4 @@
-# batch-data-pipeline-exercise
+# 批处理数据管道练习
 
 ## 目标
 
