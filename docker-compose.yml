@@ -37,7 +37,6 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
       retries: 5
-    restart: always
 
   redis:
     image: redis:latest
@@ -48,7 +47,6 @@ services:
       interval: 5s
       timeout: 30s
       retries: 50
-    restart: always
 
   airflow-webserver:
     <<: *airflow-common
@@ -60,7 +58,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
 
   airflow-scheduler:
     <<: *airflow-common
@@ -70,7 +67,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
 
   airflow-worker:
     <<: *airflow-common
@@ -82,7 +78,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
 
   airflow-init:
     <<: *airflow-common
@@ -104,7 +99,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    restart: always
 
   dwh:
     image: postgres:13
@@ -118,7 +112,6 @@ services:
       test: ["CMD", "pg_isready", "-U", "dwh"]
       interval: 5s
       retries: 5
-    restart: always
     ports: 
       - 15432:5432
   metabase:
