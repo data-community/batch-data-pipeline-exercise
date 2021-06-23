@@ -6,7 +6,8 @@
 * Docker 和 docker-compose。
 * IDE 或者 代码编辑器。比如 Visual Studio Code。
 * PostgreSQL 的 GUI 客户端。比如 Visual Studio Code 就有相应插件。
-* Python 是可选的，因为所有的代码都在docker里边运行。但如果想尝试某种 Python 语法，建议本地安装。
+* Python。可选的，因为所有的代码都在docker里边运行。但如果想尝试某种 Python 语法，建议本地安装。
+* 拉取练习所需的docker镜像。
 
 ## 建议
 
@@ -32,9 +33,11 @@ brew install docker
 brew install visual-studio-code
 ```
 
+或者使用你的常用工具。
+
 ## PostgreSQL GUI 客户端
 
-有一些开源的客户端，可自行搜索。但如果使用 Visual Studio Code，那么也可以安装插件来使用，比如 SQL Tool。
+有一些开源的客户端，可自行搜索。但如果使用 Visual Studio Code，那么也可以安装插件来使用，比如 SQL Tool。或者使用你的常用工具。
 
 ## Python （可选）
 
@@ -55,6 +58,3 @@ git clone https://github.com/data-community/batch-data-pipeline-exercise
 cd batch-data-pipeline-exercise
 docker pull
 ```
-
-
-
