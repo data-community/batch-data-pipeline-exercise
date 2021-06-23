@@ -9,13 +9,9 @@
 * Python。可选的，因为所有的代码都在docker里边运行。但如果想尝试某种 Python 语法，建议本地安装。
 * 拉取练习所需的docker镜像。
 
-## 建议
-
-强烈建议使用 [Homebrew](https://brew.sh/) 来安装软件。
-
 ## Docker 和 docker-compose
 
-如果使用 Homebrew，直接使用
+可以从[官网](https://docs.docker.com/docker-for-mac/install/)下载安装，或者使用homebrew安装
 
 ```
 brew install docker
