@@ -52,5 +52,5 @@ ASDF 举例：
 ```
 git clone https://github.com/data-community/batch-data-pipeline-exercise
 cd batch-data-pipeline-exercise
-docker pull
+docker-compose pull
 ```
