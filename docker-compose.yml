@@ -119,6 +119,8 @@ services:
       metabase/metabase
     volumes:
       - ./data/metabase:/metabase-data
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
     ports:
       - 8082:3000
 volumes:
