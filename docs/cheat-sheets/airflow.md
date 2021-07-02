@@ -10,7 +10,7 @@ curl -X POST http://localhost:8080/api/v1/dags/process_orders/dagRuns \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
     -d '{
-  "execution_date": "2020-01-01T19:00:00Z",
+  "execution_date": "2019-01-01T19:00:00Z",
   "conf": {}
 }'
 ```
