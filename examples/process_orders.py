@@ -15,7 +15,7 @@ default_end_time = '2999-12-31 23:59:59'
 
 with DAG(
     dag_id="process_orders",
-    start_date=datetime.datetime(2020, 1, 1),
+    start_date=datetime.datetime(2019, 1, 1),
     schedule_interval="@once",
     default_args=default_args,
     catchup=False,
